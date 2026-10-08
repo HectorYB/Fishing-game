@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Pescador ASCII - Terminal Fishing</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #000;
+      color: #00ff00;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #app-container {
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      max-height: 850px;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+      border: 2px solid #00ff00;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    @keyframes purchaseFlash {
+      0% { border-color: #ffaa00; box-shadow: 0 0 30px rgba(255, 170, 0, 0.9); }
+      50% { border-color: #00ffff; box-shadow: 0 0 45px rgba(0, 255, 255, 0.9); }
+      100% { border-color: #00ff00; box-shadow: 0 0 15px rgba(0, 255, 0, 0.2); }
+    }
+
+    .container-flash {
+      animation: purchaseFlash 0.8s ease-in-out;
+    }
+
+    #screen-track {
+      display: flex;
+      width: 200%;
+      height: 100%;
+      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      touch-action: pan-y;
+    }
+
+    .screen {
+      width: 50%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+    }
+
+    .nav-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      border: 1px dashed #00ff00;
+      margin-bottom: 8px;
+      background: #001100;
+      z-index: 10;
+    }
+
+    .screen-indicator {
+      font-weight: bold;
+      text-transform: uppercase;
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+    }
+
+    /* FISHING SCREEN */
+    .water-area {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #005500;
+      background: #000500;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .water-bg {
+      position: absolute;
+      top: -20px; left: 0; width: 100%; height: 120%;
+      color: #005500;
+      font-size: 13px;
+      line-height: 18px;
+      pointer-events: none;
+      white-space: pre-wrap;
+      overflow: hidden;
+      z-index: 1;
+      animation: waterFlow 3s infinite linear;
+    }
+
+    @keyframes waterFlow {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(18px); }
+    }
+
+    .swimming-fish {
+      position: absolute;
+      color: #00aa33;
+      font-size: 0.85rem;
+      pointer-events: none;
+      z-index: 2;
+      white-space: nowrap;
+      opacity: 0.75;
+    }
+
+    .fish-bg-1 {
+      top: 35%;
+      animation: swimLeftToRight 14s infinite linear;
+    }
+
+    .fish-bg-2 {
+      top: 60%;
+      animation: swimRightToLeft 18s infinite linear;
+      animation-delay: 3s;
+    }
+
+    .fish-bg-3 {
+      top: 80%;
+      animation: swimLeftToRight 11s infinite linear;
+      animation-delay: 1.5s;
+    }
+
+    @keyframes swimLeftToRight {
+      0% { left: -70px; transform: scaleX(1); }
+      100% { left: 105%; transform: scaleX(1); }
+    }
+
+    @keyframes swimRightToLeft {
+      0% { left: 105%; transform: scaleX(-1); }
+      100% { left: -70px; transform: scaleX(-1); }
+    }
+
+    .seaweed {
+      position: absolute;
+      bottom: 0;
+      color: #004411;
+      pointer-events: none;
+      z-index: 2;
+      transform-origin: bottom center;
+      line-height: 1rem;
+      white-space: pre;
+    }
+
+    .seaweed-1 { left: 5%; font-size: 1.1rem; animation: swayRight 3.2s infinite ease-in-out alternate; }
+    .seaweed-2 { left: 22%; font-size: 1.3rem; animation: swayLeft 3.6s infinite ease-in-out alternate; animation-delay: 0.3s; }
+    .seaweed-3 { left: 42%; font-size: 1.0rem; animation: swayRight 4.0s infinite ease-in-out alternate; animation-delay: 0.7s; }
+    .seaweed-4 { left: 60%; font-size: 1.4rem; animation: swayLeft 3.0s infinite ease-in-out alternate; animation-delay: 0.2s; }
+    .seaweed-5 { left: 78%; font-size: 1.2rem; animation: swayRight 3.5s infinite ease-in-out alternate; animation-delay: 1.0s; }
+    .seaweed-6 { left: 92%; font-size: 1.1rem; animation: swayLeft 3.8s infinite ease-in-out alternate; animation-delay: 0.5s; }
+
+    @keyframes swayLeft {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(-14deg); }
+    }
+
+    @keyframes swayRight {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(14deg); }
+    }
+
+    .splash {
+      position: absolute;
+      color: #00ffff;
+      font-weight: bold;
+      font-size: 1.2rem;
+      pointer-events: none;
+      z-index: 7;
+      transform: translate(-50%, -50%);
+      animation: splashAnim 0.45s forwards;
+    }
+
+    @keyframes splashAnim {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+    }
+
+    .rod-pointer-panel {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 8px 12px;
+      border: 1px solid #00ff00;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .rod-info-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #00ff00;
+      font-weight: bold;
+    }
+
+    .water-gesture-hint {
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #00aa00;
+      pointer-events: none;
+      z-index: 8;
+      font-weight: bold;
+      background: rgba(0,0,0,0.6);
+      padding: 4px 0;
+    }
+
+    .bobber {
+      position: absolute;
+      color: #ffff00;
+      font-weight: bold;
+      font-size: 1.3rem;
+      z-index: 5;
+      display: none;
+      transform: translate(-50%, -50%);
+      transition: top 0.15s ease-out;
+    }
+
+    .bobber.waiting {
+      animation: float 2s infinite steps(2);
+    }
+
+    .bobber.hooked {
+      color: #ff0000;
+      animation: shake 0.2s infinite steps(2);
+    }
+
+    .bite-alert {
+      position: absolute;
+      color: #ff0000;
+      font-weight: bold;
+      background: #000;
+      border: 1px solid #ff0000;
+      padding: 2px 6px;
+      display: none;
+      z-index: 6;
+      transform: translate(-50%, -160%);
+      font-size: 0.85rem;
+      transition: top 0.15s ease-out;
+    }
+
+    @keyframes float {
+      0%, 100% { margin-top: 0; }
+      50% { margin-top: -6px; }
+    }
+
+    @keyframes shake {
+      0% { margin-left: 0px; }
+      50% { margin-left: -4px; }
+      100% { margin-left: 4px; }
+    }
+
+    .status-msg {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-align: center;
+      height: 18px;
+      color: #00ff00;
+    }
+
+    /* SHOP SCREEN */
+    #shop-screen {
+      background: #000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .offer-card {
+      border: 1px solid #ffaa00;
+      padding: 6px 8px;
+      margin-bottom: 6px;
+      background: #110500;
+      touch-action: none;
+      cursor: grab;
+      position: relative;
+      will-change: transform, opacity;
+    }
+
+    .timer-bar-bg {
+      width: 100%;
+      height: 6px;
+      border: 1px solid #555;
+      margin-top: 4px;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      background: #ff0000;
+      width: 100%;
+    }
+
+    .offer-details {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 0.75rem;
+    }
+
+    .discard-swipe-hint {
+      color: #ffaa00;
+      font-size: 0.6rem;
+      font-weight: bold;
+      text-align: right;
+    }
+
+    .discount-badge {
+      display: none;
+      background: #00ff00;
+      color: #000;
+      font-size: 0.55rem;
+      font-weight: bold;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 4px;
+    }
+
+    .selected-tray-container {
+      border: 1px solid #ffaa00;
+      background: #0a0500;
+      padding: 8px;
+      min-height: 175px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    .tray-title-bar {
+      font-size: 0.7rem;
+      color: #ffaa00;
+      text-align: center;
+      margin-bottom: 6px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .selected-tray {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 4px;
+      align-items: center;
+      min-height: 115px;
+    }
+
+    .tray-card {
+      min-width: 86px;
+      width: 86px;
+      height: 105px;
+      border: 1px solid #ffaa00;
+      background: #1a0f00;
+      border-radius: 6px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.6rem;
+      touch-action: none;
+      cursor: grab;
+      box-shadow: 0 0 8px rgba(255, 170, 0, 0.25);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .combo-badge {
+      position: absolute;
+      top: -7px;
+      right: -5px;
+      background: #ff00ff;
+      color: #fff;
+      font-size: 0.48rem;
+      font-weight: bold;
+      padding: 2px 4px;
+      border-radius: 4px;
+      border: 1px solid #fff;
+      box-shadow: 0 0 8px #ff00ff;
+      animation: pulseCombo 0.8s infinite alternate;
+      z-index: 5;
+      white-space: nowrap;
+    }
+
+    @keyframes pulseCombo {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.08); }
+    }
+
+    .tray-card .tray-icon {
+      font-size: 1.1rem;
+    }
+
+    .tray-card .tray-name {
+      font-size: 0.58rem;
+      color: #fff;
+      font-weight: bold;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    .tray-card .tray-val {
+      color: #ffaa00;
+      font-weight: bold;
+      font-size: 0.72rem;
+      text-align: center;
+    }
+
+    .tray-card .tray-hint {
+      font-size: 0.5rem;
+      color: #ff5555;
+      text-align: center;
+    }
+
+    .deck-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #00ffff;
+      border-bottom: 1px dashed #00ffff;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .shop-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .deck-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px;
+      border: 1px solid #004400;
+      background: #000500;
+      border-radius: 6px;
+    }
+
+    .deck-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .deck-card {
+      height: 105px;
+      border: 1px solid #00ff00;
+      background: #001100;
+      border-radius: 6px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 0 6px rgba(0, 255, 0, 0.15);
+      touch-action: none;
+      cursor: grab;
+      position: relative;
+    }
+
+    .card-header-tag {
+      font-size: 0.5rem;
+      color: #00ff00;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .card-icon {
+      font-size: 0.95rem;
+      margin: 1px 0;
+      text-align: center;
+    }
+
+    .card-name {
+      font-size: 0.58rem;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    .card-value {
+      font-size: 0.68rem;
+      color: #ffaa00;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .card-hint {
+      font-size: 0.45rem;
+      color: #00aa00;
+      font-weight: bold;
+      text-align: center;
+      line-height: 0.6rem;
+    }
+
+    .toast {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #000;
+      border: 2px solid #00ff00;
+      color: #00ff00;
+      padding: 15px;
+      font-weight: bold;
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+      text-align: center;
+      width: 85%;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+    }
+
+    .toast.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app-container">
+    <div id="toast" class="toast"></div>
+
+    <div id="screen-track">
+      <!-- SCREEN 1: FISHING -->
+      <div class="screen" id="fishing-screen">
+        <div class="nav-header">
+          <div class="screen-indicator">[ ZONA DE PESCA ] &nbsp;&nbsp;&nbsp; (DESLIZA « TIENDA »)</div>
+        </div>
+
+        <div class="water-area" id="water-area">
+          <div class="water-bg" id="water-bg"></div>
+          
+          <div class="swimming-fish fish-bg-1">><((º></div>
+          <div class="swimming-fish fish-bg-2">&lt;°)))&gt;&lt;</div>
+          <div class="swimming-fish fish-bg-3">><((((º></div>
+
+          <div class="seaweed seaweed-1">§<br/>)||(<br/>§§</div>
+          <div class="seaweed seaweed-2">||<br/>§§<br/>||||</div>
+          <div class="seaweed seaweed-3">§§<br/>|||<br/>§</div>
+          <div class="seaweed seaweed-4">|||<br/>§§<br/>||</div>
+          <div class="seaweed seaweed-5">§<br/>||<br/>§§§</div>
+          <div class="seaweed seaweed-6">||||<br/>§<br/>||</div>
+
+          <div class="rod-pointer-panel">
+            <div class="rod-info-header">
+              <span>CAÑA: <span id="rod-name">BAMBÚ</span></span>
+              <span>VEL: <span id="rod-speed">x1.0</span></span>
+            </div>
+          </div>
+
+          <div class="water-gesture-hint" id="water-gesture-hint">
+            ▲ DESLIZA HACIA ARRIBA PARA LANZAR ▲
+          </div>
+
+          <div class="bobber" id="bobber">J~</div>
+          <div class="bite-alert" id="bite-alert">! BITE !</div>
+        </div>
+
+        <div class="status-msg" id="status-msg">&gt; DESLIZA HACIA ARRIBA EN EL AGUA</div>
+      </div>
+
+      <!-- SCREEN 2: SHOP / CARD DECK & TRAY -->
+      <div class="screen" id="shop-screen">
+        <div class="nav-header">
+          <div class="screen-indicator">(DESLIZA « PESCA ») &nbsp;&nbsp;&nbsp; [ MERCADO ASCII ]</div>
+        </div>
+
+        <div class="offer-card" id="offer-card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center;">
+              <strong style="color: #ffaa00;" id="offer-title">&gt; OFERTA: FIBRA</strong>
+              <span class="discount-badge" id="discount-badge">¡REBAJADA!</span>
+            </div>
+            <span style="font-size: 0.8rem; color: #ff0000;" id="timer-text">15s</span>
+          </div>
+          <div class="timer-bar-bg">
+            <div class="timer-bar-fill" id="timer-bar"></div>
+          </div>
+          <div class="offer-details">
+            <div>OBJETIVO: <span id="target-value">80</span> PTS</div>
+            <div class="discard-swipe-hint">◄ DESLIZA A LA IZQ. PARA DESCARTAR</div>
+          </div>
+        </div>
+
+        <div class="selected-tray-container">
+          <div class="tray-title-bar" id="tray-title-bar">▼ CARTAS EN MESA (MÁX: 4 TIPOS) ▼</div>
+          <div class="selected-tray" id="selected-tray"></div>
+        </div>
+
+        <div class="deck-header-bar">
+          <span id="deck-count-text">BARAJA: 0 PECES</span>
+          <span style="color:#00ff00;">SLOTS EN MESA: <span id="tray-count-text">0</span>/<span id="tray-max-text">4</span></span>
+        </div>
+
+        <div class="shop-body">
+          <div class="deck-area">
+            <div class="deck-grid" id="deck-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- ASCII WATER GENERATOR ---
+    const waterBg = document.getElementById('water-bg');
+    let waterPattern = "";
+    for(let i = 0; i < 35; i++) {
+      waterPattern += "~ . ~ ~ . ~ ~ ~ . ~ . ~ ~ ~ . ~ ~ . ~ ~ .\n";
+      waterPattern += "  ~ ~ . ~   ~ . ~ ~ . ~ ~ . ~  ~ ~ . ~ ~\n";
+    }
+    waterBg.textContent = waterPattern;
+
+    // --- GAME DATA ---
+    const RODS = [
+      // Nivel Básico
+      { id: 1, name: "BAMBÚ", speed: 1.0, maxTier: 1, cost: 0, maxCards: 4, pulls: 3 },
+      { id: 2, name: "FIBRA", speed: 1.5, maxTier: 2, targetValue: 80, timeLimit: 22, maxCards: 4, pulls: 3 },
+      { id: 3, name: "FIBRA ÓPT.", speed: 1.8, maxTier: 2, targetValue: 140, timeLimit: 21, maxCards: 4, pulls: 3 }, // Nueva variante
+      
+      // Nivel Avanzado
+      { id: 4, name: "ALUMINIO", speed: 2.0, maxTier: 3, targetValue: 180, timeLimit: 20, maxCards: 4, pulls: 4 }, // Nueva variante
+      { id: 5, name: "CARBONO", speed: 2.2, maxTier: 3, targetValue: 220, timeLimit: 20, maxCards: 3, pulls: 4 },
+      { id: 6, name: "TITÁN", speed: 3.5, maxTier: 4, targetValue: 500, timeLimit: 18, maxCards: 3, pulls: 4 },
+      
+      // Nivel Experto
+      { id: 7, name: "KEVLAR", speed: 5.0, maxTier: 4, targetValue: 900, timeLimit: 16, maxCards: 3, pulls: 5 },
+      { id: 8, name: "GRAFENO", speed: 6.2, maxTier: 5, targetValue: 1200, timeLimit: 15, maxCards: 3, pulls: 5 }, // Nueva variante
+      { id: 9, name: "NEODIMIO", speed: 7.5, maxTier: 5, targetValue: 1600, timeLimit: 14, maxCards: 2, pulls: 5 },
+      
+      // Nivel Legendario
+      { id: 10, name: "MÍTICA", speed: 10.0, maxTier: 5, targetValue: 2800, timeLimit: 12, maxCards: 2, pulls: 6 },
+      { id: 11, name: "PLASMA", speed: 12.5, maxTier: 6, targetValue: 3800, timeLimit: 11, maxCards: 2, pulls: 6 }, // Nueva variante
+      { id: 12, name: "CÓSMICA", speed: 15.0, maxTier: 6, targetValue: 5000, timeLimit: 10, maxCards: 2, pulls: 6 },
+      
+      // Nivel Dimensional (Nuevas cañas finales)
+      { id: 13, name: "CUÁNTICA", speed: 20.0, maxTier: 6, targetValue: 8000, timeLimit: 9, maxCards: 2, pulls: 7 },
+      { id: 14, name: "OMNI-CAÑA", speed: 30.0, maxTier: 6, targetValue: 15000, timeLimit: 8, maxCards: 1, pulls: 8 }
+    ];
+
+    // --- EXTENDED FISH SPECIES CATALOG ---
+    const FISH_SPECIES = [
+      // TIER 1
+      { name: "SARDINA", tier: 1, icon: "><>", value: 10 },
+      { name: "BOQUERÓN", tier: 1, icon: "><((º>", value: 15 },
+      { name: "MOJARRA", tier: 1, icon: "<°))))>", value: 20 },
+      { name: "CABALLITO", tier: 1, icon: "&><", value: 25 },
+
+      // TIER 2
+      { name: "TRUCHA", tier: 2, icon: "<°)))><", value: 35 },
+      { name: "CABALLA", tier: 2, icon: "><==º>", value: 45 },
+      { name: "SALMÓN", tier: 2, icon: "=<°)))><", value: 60 },
+      { name: "CARPA DORADA", tier: 2, icon: "<$$$><", value: 75 },
+
+      // TIER 3
+      { name: "P. GLOBO", tier: 3, icon: "(O_O)", value: 95 },
+      { name: "MEDUSA", tier: 3, icon: "(:::)^", value: 120 },
+      { name: "ATÚN", tier: 3, icon: "><((((º>", value: 150 },
+      { name: "BACALAO", tier: 3, icon: "<####><", value: 180 },
+
+      // TIER 4
+      { name: "MANTA RAYA", tier: 4, icon: "<~~/\\~~>", value: 230 },
+      { name: "P. ESPADA", tier: 4, icon: "-<(((><", value: 290 },
+      { name: "TIBURÓN", tier: 4, icon: "\\/\\/\\><", value: 360 },
+      { name: "RAPE ABISAL", tier: 4, icon: "*(o_o)>", value: 450 },
+
+      // TIER 5
+      { name: "CALAMAR GIG", tier: 5, icon: "<C===3", value: 580 },
+      { name: "KRAKEN", tier: 5, icon: "<O>==<", value: 750 },
+      { name: "LEVIATÁN", tier: 5, icon: "~~><(((º>", value: 980 },
+      { name: "MEGATORO", tier: 5, icon: "}}===(o)>", value: 1250 },
+
+      // TIER 6
+      { name: "HYDRA MAR", tier: 6, icon: "~~3~><", value: 1600 },
+      { name: "DRAGÓN MAR", tier: 6, icon: "~~/\\/\\><", value: 2100 },
+      { name: "FÉNIX AGUA", tier: 6, icon: "*~<(((º>~*", value: 2800 },
+      { name: "P. ANCESTRAL", tier: 6, icon: "<***#><", value: 3800 }
+    ];
+
+    // --- STATE ---
+    let currentScreen = 0; // 0: Fishing, 1: Shop
+    let currentRodIndex = 0;
+    let inventory = [];
+    let selectedFishIndices = [];
+
+    let fishingState = 'idle';
+    let biteTimeout = null;
+    let escapeTimeout = null;
+    let pullsNeeded = 0;
+    let currentPulls = 0;
+
+    let currentOfferRodIndex = 1;
+    let currentOfferTargetValue = 0;
+    let offerTimer = null;
+    let offerTimeRemaining = 0;
+
+    // --- DOM ELEMENTS ---
+    const appContainer = document.getElementById('app-container');
+    const screenTrack = document.getElementById('screen-track');
+    const toast = document.getElementById('toast');
+    const waterArea = document.getElementById('water-area');
+    const rodNameEl = document.getElementById('rod-name');
+    const rodSpeedEl = document.getElementById('rod-speed');
+    const bobber = document.getElementById('bobber');
+    const biteAlert = document.getElementById('bite-alert');
+    const statusMsg = document.getElementById('status-msg');
+    const waterGestureHint = document.getElementById('water-gesture-hint');
+
+    const offerCard = document.getElementById('offer-card');
+    const offerTitle = document.getElementById('offer-title');
+    const discountBadge = document.getElementById('discount-badge');
+    const timerText = document.getElementById('timer-text');
+    const timerBar = document.getElementById('timer-bar');
+    const targetValueEl = document.getElementById('target-value');
+    const deckGrid = document.getElementById('deck-grid');
+    const selectedTray = document.getElementById('selected-tray');
+    const deckCountText = document.getElementById('deck-count-text');
+    const trayCountText = document.getElementById('tray-count-text');
+    const trayMaxText = document.getElementById('tray-max-text');
+    const trayTitleBar = document.getElementById('tray-title-bar');
+
+    // --- HELPER FUNCTIONS ---
+    function getX(e) {
+      return e.touches ? e.touches[0].clientX : e.clientX;
+    }
+
+    function getY(e) {
+      return e.touches ? e.touches[0].clientY : e.clientY;
+    }
+
+    function createSplash(x, y) {
+      const splash = document.createElement('div');
+      splash.className = 'splash';
+      splash.innerText = '*~*';
+      splash.style.left = `${x}px`;
+      splash.style.top = `${y}px`;
+      waterArea.appendChild(splash);
+      setTimeout(() => splash.remove(), 450);
+    }
+
+    // --- COMBINATION & TABLE SCORE CALCULATOR SYSTEM ---
+    function getTableGroups() {
+      const groupsMap = {};
+      selectedFishIndices.forEach(idx => {
+        const fish = inventory[idx];
+        if (fish) {
+          if (!groupsMap[fish.name]) {
+            groupsMap[fish.name] = {
+              name: fish.name,
+              icon: fish.icon,
+              value: fish.value,
+              tier: fish.tier,
+              indices: []
+            };
+          }
+          groupsMap[fish.name].indices.push(idx);
+        }
+      });
+      return Object.values(groupsMap);
+    }
+
+    function calculateTableScore() {
+      const groups = getTableGroups();
+      let totalScore = 0;
+
+      groups.forEach(group => {
+        const count = group.indices.length;
+        // Multiplicador acumulativo por combinación del mismo pez:
+        // 1 pez = 1.0x | 2 peces = 2.0x | 3 peces = 3.2x | 4 peces = 4.8x ...
+        const mult = count === 1 ? 1.0 : (1 + (count - 1) * 0.6 + (count > 2 ? (count - 2) * 0.2 : 0));
+        group.mult = mult;
+        group.totalVal = Math.floor(group.value * count * mult);
+        group.bonusVal = group.totalVal - (group.value * count);
+        totalScore += group.totalVal;
+      });
+
+      return { totalScore, groups };
+    }
+
+    function updateTrayTitleBar() {
+      const targetRod = RODS[currentOfferRodIndex];
+      const maxSlots = targetRod ? targetRod.maxCards : '-';
+      const { totalScore, groups } = calculateTableScore();
+      trayTitleBar.innerHTML = `▼ MESA: <span style="color:#00ff00;">${totalScore}</span> / ${currentOfferTargetValue} PTS (SLOTS: ${groups.length}/${maxSlots}) ▼`;
+    }
+
+    // --- SCREEN SWIPE NAVIGATION ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isSwipingScreen = false;
+
+    appContainer.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.deck-card') || e.target.closest('.tray-card') || e.target.closest('#offer-card')) return;
+      touchStartX = getX(e);
+      touchStartY = getY(e);
+      isSwipingScreen = true;
+    }, { passive: true });
+
+    appContainer.addEventListener('touchend', (e) => {
+      if (!isSwipingScreen) return;
+      isSwipingScreen = false;
+      const deltaX = (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) - touchStartX;
+      const deltaY = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY) - touchStartY;
+
+      if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+        if (deltaX < 0 && currentScreen === 0) switchScreen(1);
+        else if (deltaX > 0 && currentScreen === 1) switchScreen(0);
+      }
+    });
+
+    let mouseStartX = 0;
+    let isMouseDown = false;
+
+    appContainer.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.deck-card') || e.target.closest('.tray-card') || e.target.closest('#offer-card')) return;
+      mouseStartX = e.clientX;
+      isMouseDown = true;
+    });
+
+    appContainer.addEventListener('mouseup', (e) => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      const deltaX = e.clientX - mouseStartX;
+      if (Math.abs(deltaX) > 80) {
+        if (deltaX < 0 && currentScreen === 0) switchScreen(1);
+        if (deltaX > 0 && currentScreen === 1) switchScreen(0);
+      }
+    });
+
+    function switchScreen(screenIdx) {
+      currentScreen = screenIdx;
+      screenTrack.style.transform = `translateX(-${screenIdx * 50}%)`;
+      if (screenIdx === 1) {
+        if (currentOfferTargetValue === 0) initShopOffer();
+        renderShop();
+      }
+    }
+
+    // --- OFFER CARD SWIPE TO DISCARD (RIGHT TO LEFT) ---
+    let offerStartX = 0, offerStartY = 0, offerCurrentX = 0, isSwipingOffer = false;
+
+    function startOfferSwipe(e) {
+      isSwipingOffer = true;
+      offerStartX = getX(e);
+      offerStartY = getY(e);
+      offerCard.style.transition = 'none';
+    }
+
+    function moveOfferSwipe(e) {
+      if (!isSwipingOffer) return;
+      const deltaX = getX(e) - offerStartX;
+      const deltaY = getY(e) - offerStartY;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX < 0) {
+        if (e.cancelable) e.preventDefault();
+        offerCurrentX = deltaX;
+        offerCard.style.transform = `translateX(${deltaX}px)`;
+        offerCard.style.opacity = `${Math.max(0.2, 1 - Math.abs(deltaX) / 220)}`;
+      }
+    }
+
+    function endOfferSwipe() {
+      if (!isSwipingOffer) return;
+      isSwipingOffer = false;
+      offerCard.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+
+      if (offerCurrentX < -70) {
+        offerCard.style.transform = 'translateX(-110%)';
+        offerCard.style.opacity = '0';
+        setTimeout(() => {
+          initShopOffer(true);
+          offerCard.style.transform = 'translateX(0)';
+          offerCard.style.opacity = '1';
+        }, 220);
+      } else {
+        offerCard.style.transform = 'translateX(0)';
+        offerCard.style.opacity = '1';
+      }
+      offerCurrentX = 0;
+    }
+
+    offerCard.addEventListener('touchstart', startOfferSwipe, { passive: false });
+    offerCard.addEventListener('touchmove', moveOfferSwipe, { passive: false });
+    offerCard.addEventListener('touchend', endOfferSwipe);
+
+    offerCard.addEventListener('mousedown', startOfferSwipe);
+    window.addEventListener('mousemove', (e) => { if (isSwipingOffer) moveOfferSwipe(e); });
+    window.addEventListener('mouseup', () => { if (isSwipingOffer) endOfferSwipe(); });
+
+    // --- WATER VERTICAL SWIPE MECHANICS ---
+    let waterSwipeStartY = 0;
+    let waterSwipeStartX = 0;
+    let isWaterSwiping = false;
+
+    waterArea.addEventListener('touchstart', startWaterSwipe, { passive: false });
+    waterArea.addEventListener('mousedown', startWaterSwipe);
+
+    window.addEventListener('touchend', endWaterSwipe);
+    window.addEventListener('mouseup', endWaterSwipe);
+
+    function startWaterSwipe(e) {
+      if (currentScreen !== 0) return;
+      isWaterSwiping = true;
+      waterSwipeStartX = getX(e);
+      waterSwipeStartY = getY(e);
+    }
+
+    function endWaterSwipe(e) {
+      if (!isWaterSwiping) return;
+      isWaterSwiping = false;
+
+      const endX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+      const endY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+
+      const deltaX = endX - waterSwipeStartX;
+      const deltaY = waterSwipeStartY - endY;
+
+      if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 35) {
+        if (deltaY > 0 && fishingState === 'idle') {
+          const rect = waterArea.getBoundingClientRect();
+          const targetX = Math.max(30, Math.min(rect.width - 30, endX - rect.left));
+          const targetY = Math.max(60, Math.min(rect.height - 40, endY - rect.top));
+          castParabola(targetX, targetY);
+        } else if (deltaY < 0 && fishingState === 'hooked') {
+          handlePull();
+        }
+      }
+    }
+
+    function castParabola(targetX, targetY) {
+      fishingState = 'casting';
+      statusMsg.textContent = "> LANZANDO ANZUELO...";
+      waterGestureHint.style.display = 'none';
+      bobber.style.display = 'block';
+      bobber.className = 'bobber';
+      biteAlert.style.display = 'none';
+
+      const startX = waterArea.clientWidth / 2;
+      const startY = waterArea.clientHeight - 20;
+
+      let startTime = null;
+      const duration = 550;
+
+      function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+
+        const currentX = startX + (targetX - startX) * progress;
+        const controlY = Math.min(startY, targetY) - 120;
+        const currentY = Math.pow(1 - progress, 2) * startY + 
+                         2 * (1 - progress) * progress * controlY + 
+                         Math.pow(progress, 2) * targetY;
+
+        bobber.style.left = `${currentX}px`;
+        bobber.style.top = `${currentY}px`;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          createSplash(targetX, targetY);
+          startWaitingForBite();
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function startWaitingForBite() {
+      fishingState = 'waiting';
+      statusMsg.textContent = "> ESPERANDO PICADA...";
+      bobber.classList.add('waiting');
+
+      const rodSpeed = RODS[currentRodIndex].speed;
+      const waitTime = Math.max(1000, (3800 - Math.random() * 1800) / rodSpeed);
+
+      biteTimeout = setTimeout(() => {
+        if (fishingState === 'waiting') {
+          fishingState = 'hooked';
+          bobber.classList.remove('waiting');
+          bobber.classList.add('hooked');
+          biteAlert.style.display = 'block';
+          biteAlert.style.left = bobber.style.left;
+          biteAlert.style.top = bobber.style.top;
+          
+          const rodPulls = RODS[currentRodIndex].pulls;
+          pullsNeeded = Math.max(2, rodPulls + (Math.random() > 0.5 ? 1 : 0));
+          currentPulls = 0;
+
+          statusMsg.textContent = `> ¡PICÓ! DESLIZA ABAJO (0/${pullsNeeded})`;
+          waterGestureHint.textContent = `▼ ¡TIRA HACIA ABAJO! (0/${pullsNeeded}) ▼`;
+          waterGestureHint.style.color = "#ff0000";
+          waterGestureHint.style.display = 'block';
+
+          startEscapeTimer();
+        }
+      }, waitTime);
+    }
+
+    function startEscapeTimer() {
+      clearTimeout(escapeTimeout);
+      const timeLimit = Math.max(1200, 2000 - (RODS[currentRodIndex].id * 100));
+      escapeTimeout = setTimeout(() => {
+        if (fishingState === 'hooked') {
+          fishEscaped();
+        }
+      }, timeLimit);
+    }
+
+    function fishEscaped() {
+      showToast("💨 ¡EL PEZ ESCAPÓ!\n\nTe tardaste demasiado en tirar.");
+      resetFishing();
+    }
+
+    function handlePull() {
+      currentPulls++;
+      clearTimeout(escapeTimeout);
+
+      const currentX = parseFloat(bobber.style.left) || waterArea.clientWidth / 2;
+      const currentY = parseFloat(bobber.style.top) || waterArea.clientHeight / 2;
+
+      createSplash(currentX, currentY);
+
+      const nextY = Math.min(waterArea.clientHeight - 30, currentY + 25);
+      bobber.style.top = `${nextY}px`;
+      biteAlert.style.top = `${nextY}px`;
+
+      if (currentPulls >= pullsNeeded) {
+        reelIn();
+      } else {
+        statusMsg.textContent = `> ¡TIRA OTRA VEZ! (${currentPulls}/${pullsNeeded})`;
+        waterGestureHint.textContent = `▼ ¡SIGUE TIRANDO! (${currentPulls}/${pullsNeeded}) ▼`;
+        startEscapeTimer();
+      }
+    }
+
+    function reelIn() {
+      clearTimeout(escapeTimeout);
+      const rod = RODS[currentRodIndex];
+      const availableFish = FISH_SPECIES.filter(f => f.tier <= rod.maxTier);
+      const caughtFish = availableFish[Math.floor(Math.random() * availableFish.length)];
+
+      inventory.push(caughtFish);
+
+      showToast(`+ CAPTURA CON ÉXITO:\n\n${caughtFish.icon}\n${caughtFish.name}\nVALOR: ${caughtFish.value} PTS`);
+      resetFishing();
+    }
+
+    function resetFishing() {
+      fishingState = 'idle';
+      clearTimeout(biteTimeout);
+      clearTimeout(escapeTimeout);
+      bobber.style.display = 'none';
+      bobber.classList.remove('waiting', 'hooked');
+      biteAlert.style.display = 'none';
+      
+      statusMsg.textContent = "> DESLIZA HACIA ARRIBA EN EL AGUA";
+      waterGestureHint.textContent = "▲ DESLIZA HACIA ARRIBA PARA LANZAR ▲";
+      waterGestureHint.style.color = "#00aa00";
+      waterGestureHint.style.display = 'block';
+    }
+
+    function showToast(text) {
+      toast.innerText = text;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // --- SHOP DECK & TRAY SYSTEM ---
+    function initShopOffer(isReroll = false) {
+      if (currentOfferRodIndex >= RODS.length) {
+        offerTitle.textContent = "> TODAS LAS CAÑAS ADQUIRIDAS";
+        timerText.textContent = "--";
+        targetValueEl.textContent = "0";
+        trayMaxText.textContent = "-";
+        discountBadge.style.display = 'none';
+        return;
+      }
+
+      const targetRod = RODS[currentOfferRodIndex];
+      
+      const discountRoll = Math.random();
+      let multiplier = 1.0;
+
+      if (discountRoll < 0.35) { // 35% de prob. de oferta rebajada
+        multiplier = 0.55 + Math.random() * 0.25;
+        discountBadge.style.display = 'inline-block';
+      } else {
+        multiplier = 0.90 + Math.random() * 0.20;
+        discountBadge.style.display = 'none';
+      }
+
+      currentOfferTargetValue = Math.max(10, Math.round(targetRod.targetValue * multiplier));
+
+      offerTitle.textContent = `> OFERTA: ${targetRod.name}`;
+      targetValueEl.textContent = currentOfferTargetValue;
+      trayMaxText.textContent = targetRod.maxCards;
+      
+      selectedFishIndices = [];
+      updateSelectedValue();
+
+      offerTimeRemaining = targetRod.timeLimit;
+      if (offerTimer) clearInterval(offerTimer);
+
+      updateTimerDisplay();
+      offerTimer = setInterval(() => {
+        offerTimeRemaining -= 0.1;
+        if (offerTimeRemaining <= 0) {
+          clearInterval(offerTimer);
+          handleOfferExpired();
+        } else {
+          updateTimerDisplay();
+        }
+      }, 100);
+
+      if (isReroll) {
+        showToast("! OFERTA RENOVADA !\nNUEVAS CONDICIONES GENERADAS");
+      }
+    }
+
+    function updateTimerDisplay() {
+      const targetRod = RODS[currentOfferRodIndex];
+      const percent = (offerTimeRemaining / targetRod.timeLimit) * 100;
+      timerBar.style.width = `${Math.max(0, percent)}%`;
+      timerText.textContent = `${Math.ceil(offerTimeRemaining)}s`;
+    }
+
+    function handleOfferExpired() {
+      if (selectedFishIndices.length > 0) {
+        selectedFishIndices.sort((a, b) => b - a).forEach(idx => {
+          inventory.splice(idx, 1);
+        });
+        showToast("! TIEMPO AGOTADO !\nPERDISTE LAS CARTAS USADAS EN MESA");
+      } else {
+        showToast("! OFERTA EXPIRADA !\nNUEVA OFERTA GENERADA");
+      }
+      initShopOffer();
+      renderShop();
+    }
+
+    function renderShop() {
+      renderDeck();
+      renderTray();
+      updateTrayTitleBar();
+    }
+
+    function discardFish(inventoryIndex) {
+      inventory.splice(inventoryIndex, 1);
+      selectedFishIndices = selectedFishIndices
+        .filter(i => i !== inventoryIndex)
+        .map(i => i > inventoryIndex ? i - 1 : i);
+      updateSelectedValue();
+      renderShop();
+    }
+
+    function renderDeck() {
+      deckGrid.innerHTML = '';
+
+      const unselectedIndices = inventory.map((_, i) => i).filter(i => !selectedFishIndices.includes(i));
+      deckCountText.textContent = `BARAJA: ${unselectedIndices.length} PECES`;
+
+      if (unselectedIndices.length === 0) {
+        deckGrid.style.display = 'block';
+        deckGrid.innerHTML = '<div style="color:#00ff00; text-align:center; padding-top:40px; font-weight:bold; font-size:0.75rem;">¡BARAJA VACÍA!</div>';
+        return;
+      }
+
+      deckGrid.style.display = 'grid';
+
+      const currentGroups = getTableGroups();
+
+      unselectedIndices.forEach((inventoryIndex) => {
+        const fish = inventory[inventoryIndex];
+        const card = document.createElement('div');
+        card.className = 'deck-card';
+
+        // Comprobar si ya existe una carta de este pez en la mesa
+        const isSameTypeOnTable = currentGroups.some(g => g.name === fish.name);
+
+        if (isSameTypeOnTable) {
+          card.style.borderColor = '#ff00ff';
+          card.style.boxShadow = '0 0 8px rgba(255, 0, 255, 0.4)';
+        }
+
+        card.innerHTML = `
+          <div class="card-header-tag">
+            <span>[CARTA]</span>
+            <span>T${fish.tier}</span>
+          </div>
+          <div class="card-icon">${fish.icon}</div>
+          <div class="card-name">${fish.name}</div>
+          <div class="card-value">+${fish.value}${isSameTypeOnTable ? ' <span style="color:#ff00ff; font-size:0.5rem;">⚡COMBINA</span>' : ''}</div>
+          <div class="card-hint">${isSameTypeOnTable ? '▲ COMBINAR EN MESA' : '▲ MESA'}<br/>▼ DESCARTAR</div>
+        `;
+
+        setupDeckCardDrag(card, inventoryIndex, isSameTypeOnTable);
+        deckGrid.appendChild(card);
+      });
+    }
+
+    function setupDeckCardDrag(card, fishIndex, isSameTypeOnTable) {
+      let startX = 0, startY = 0;
+      let currentX = 0, currentY = 0;
+      let isDragging = false;
+
+      const onStart = (e) => {
+        if (e.cancelable) e.preventDefault();
+        isDragging = true;
+        startX = getX(e);
+        startY = getY(e);
+        card.style.transition = 'none';
+        card.style.zIndex = '50';
+      };
+
+      const onMove = (e) => {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+        currentX = getX(e) - startX;
+        currentY = getY(e) - startY;
+        card.style.transform = `translate(${currentX}px, ${currentY}px)`;
+      };
+
+      const onEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        const targetRod = RODS[currentOfferRodIndex];
+        const currentGroups = getTableGroups();
+
+        if (currentY < -35) { // Deslizar Arriba -> Colocar o Combinar en Mesa
+          if (!isSameTypeOnTable && targetRod && currentGroups.length >= targetRod.maxCards) {
+            showToast(`! LÍMITE DE SLOTS EN MESA !\n(${targetRod.maxCards} TIPOS DE PECES MÁXIMO)\n¡Combina peces iguales para no usar slots extras!`);
+            card.style.transition = 'transform 0.2s ease-out';
+            card.style.transform = 'translate(0px, 0px)';
+            card.style.zIndex = '1';
+            return;
+          }
+
+          card.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+          card.style.transform = `translate(${currentX}px, -120px) scale(0.6)`;
+          card.style.opacity = '0';
+
+          setTimeout(() => {
+            const fish = inventory[fishIndex];
+            selectedFishIndices.push(fishIndex);
+            
+            if (isSameTypeOnTable) {
+              showToast(`⚡ ¡FUSIÓN REALIZADA!\n${fish.name} combinado en la mesa con MULTIPLICADOR`);
+            }
+
+            updateSelectedValue();
+            renderShop();
+          }, 180);
+        } else if (currentY > 35) { // Deslizar Abajo -> Descartar de Baraja
+          card.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+          card.style.transform = `translate(${currentX}px, 120px) scale(0.6)`;
+          card.style.opacity = '0';
+
+          setTimeout(() => {
+            discardFish(fishIndex);
+          }, 180);
+        } else {
+          card.style.transition = 'transform 0.2s ease-out';
+          card.style.transform = 'translate(0px, 0px)';
+          card.style.zIndex = '1';
+        }
+      };
+
+      card.addEventListener('mousedown', onStart);
+      card.addEventListener('touchstart', onStart, { passive: false });
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchend', onEnd);
+    }
+
+    function renderTray() {
+      selectedTray.innerHTML = '';
+      const targetRod = RODS[currentOfferRodIndex];
+      const maxSlots = targetRod ? targetRod.maxCards : '-';
+
+      const { groups } = calculateTableScore();
+      trayCountText.textContent = groups.length;
+      trayMaxText.textContent = maxSlots;
+
+      if (groups.length === 0) {
+        selectedTray.innerHTML = '<div style="color:#aa7700; font-size:0.65rem; text-align:center; width:100%; padding-top:35px;">(SIN CARTAS EN LA MESA)</div>';
+        return;
+      }
+
+      groups.forEach((group) => {
+        const card = document.createElement('div');
+        card.className = 'tray-card';
+
+        const count = group.indices.length;
+        const isCombined = count > 1;
+
+        if (isCombined) {
+          card.style.borderColor = '#ff00ff';
+          card.style.boxShadow = '0 0 12px rgba(255, 0, 255, 0.5)';
+        }
+
+        card.innerHTML = `
+          ${isCombined ? `<div class="combo-badge">⚡ FUSIÓN x${count} (x${group.mult.toFixed(1)})</div>` : ''}
+          <div class="tray-icon">${group.icon}</div>
+          <div class="tray-name">${group.name}</div>
+          <div class="tray-val">+${group.totalVal}${isCombined ? ` <span style="font-size:0.5rem; color:#00ff00;">(+${group.bonusVal})</span>` : ''}</div>
+          <div class="tray-hint">${isCombined ? '▼ BAJAR GRUPO' : '▼ BAJAR'}</div>
+        `;
+
+        setupTrayCardDrag(card, group);
+        selectedTray.appendChild(card);
+      });
+    }
+
+    function setupTrayCardDrag(card, group) {
+      let startX = 0, startY = 0;
+      let currentX = 0, currentY = 0;
+      let isDragging = false;
+
+      const onStart = (e) => {
+        if (e.cancelable) e.preventDefault();
+        isDragging = true;
+        startX = getX(e);
+        startY = getY(e);
+        card.style.transition = 'none';
+        card.style.zIndex = '50';
+      };
+
+      const onMove = (e) => {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+        currentX = getX(e) - startX;
+        currentY = getY(e) - startY;
+        card.style.transform = `translate(${currentX}px, ${currentY}px)`;
+      };
+
+      const onEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        if (currentY > 35) { // Deslizar Abajo -> Devuelve el grupo entero a la baraja
+          card.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+          card.style.transform = `translate(${currentX}px, 120px) scale(0.6)`;
+          card.style.opacity = '0';
+
+          setTimeout(() => {
+            selectedFishIndices = selectedFishIndices.filter(idx => !group.indices.includes(idx));
+            updateSelectedValue();
+            renderShop();
+          }, 180);
+        } else {
+          card.style.transition = 'transform 0.2s ease-out';
+          card.style.transform = 'translate(0px, 0px)';
+          card.style.zIndex = '1';
+        }
+      };
+
+      card.addEventListener('mousedown', onStart);
+      card.addEventListener('touchstart', onStart, { passive: false });
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchend', onEnd);
+    }
+
+    function updateSelectedValue() {
+      const { totalScore } = calculateTableScore();
+      updateTrayTitleBar();
+
+      const targetRod = RODS[currentOfferRodIndex];
+
+      if (targetRod && totalScore >= currentOfferTargetValue) {
+        autoExecutePurchase();
+      }
+    }
+
+    function autoExecutePurchase() {
+      clearInterval(offerTimer);
+
+      selectedFishIndices.sort((a, b) => b - a).forEach(idx => {
+        inventory.splice(idx, 1);
+      });
+      selectedFishIndices = [];
+
+      currentRodIndex = currentOfferRodIndex;
+      currentOfferRodIndex++;
+
+      rodNameEl.textContent = RODS[currentRodIndex].name;
+      rodSpeedEl.textContent = `x${RODS[currentRodIndex].speed}`;
+
+      appContainer.classList.add('container-flash');
+      setTimeout(() => {
+        appContainer.classList.remove('container-flash');
+      }, 800);
+
+      showToast(`🎉 ¡COMPRA EXITOSA!\nNUEVA CAÑA DESBLOQUEADA:\n${RODS[currentRodIndex].name}`);
+
+      initShopOffer();
+      renderShop();
+    }
+
+    // Init
+    rodNameEl.textContent = RODS[0].name;
+    rodSpeedEl.textContent = `x${RODS[0].speed}`;
+  </script>
+</body>
+</html>
